@@ -1,1 +1,3 @@
-test
+In this code, we present a method to smooth the implied volatility surface and demonstrate how to build local volatility surface from available stock options’ prices on market. The process consists of calculating the implied volatility by Black-Scholes model, fitting implied volatility smile by SABR model, smooth the implied volatility surface by polynomials, and producing the local volatility surface by Dupire’s formula. 
+
+More infomation please refer to paper "The Local Volatility Surface".
