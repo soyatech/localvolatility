@@ -34,6 +34,11 @@ expiries = optionData.index.get_level_values("Expiry").unique().date
 result = [e for e in expiries if e > quote_time.date()]
 result.sort()
 
+def p2f(x):
+    return float(x.strip('%'))/100
+
+optionData["Iv"] = optionData.apply(lambda f: p2f(f["IV"]), axis=1)
+
 
 def get_option_item(strike, expiry, type, data):
     try:
@@ -43,8 +48,8 @@ def get_option_item(strike, expiry, type, data):
         return None
 
 def get_volatility(strike, expiry, data):
-    call = get_option_item(strike, expiry, 1, data)
-    put = get_option_item(strike, expiry, 2, data)
+    call = get_option_item(strike, expiry, 'call', data)
+    put = get_option_item(strike, expiry, 'put', data)
     
     if call is None or abs(call.Iv - 0) <= 0.0001:
         if put is not None:
@@ -57,15 +62,11 @@ def get_volatility(strike, expiry, data):
     
     return (call.Iv+put.Iv)/2
 
-
-
 def __day_to_maturity(expiry):
     total_seconds = ((expiry-quote_time.date()).total_seconds()) 
     return round(total_seconds/(365*24*60*60), 5)
 
 s = underlying_price
-
-
 
 def calculate_sabr(a, v, p, F, k, t):
     b=0.5
@@ -231,52 +232,52 @@ def show_multiple_smile(result):
 surfaceData = get_all_smiles(result)
 
 def __ShowChart(xx, yy, zz, output, nbchart, color, fig):
-       print("Plotting " + output + " surface ...")
+    print("Plotting " + output + " surface ...")
 
-       #ax = fig.add_subplot(3, 4, nbchart, projection='3d')
-       ax = fig.add_subplot(1, 1, nbchart, projection='3d')
-       ax.set_title(output)
+    #ax = fig.add_subplot(3, 4, nbchart, projection='3d')
+    ax = fig.add_subplot(1, 1, nbchart, projection='3d')
+    ax.set_title(output)
 
-       surf = ax.plot_surface(xx, yy, zz,rstride=1, cstride=1,
-                              alpha=0.65,cmap=color,vmin=zz.min(), vmax=zz.max())
-       ax.set_xlabel('S')
-       ax.set_ylabel('T')
-       ax.set_zlabel(output)
-       # Plot 3D contour
-       zzlevels = np.linspace(zz.min(),zz.max(),num=3,endpoint=True)
-       xxlevels = np.linspace(xx.min(),xx.max(),num=3,endpoint=True)
-       yylevels = np.linspace(yy.min(),yy.max(),num=3,endpoint=True)
-       cset = ax.contour(xx, yy, zz, zzlevels, zdir='z',offset=zz.min(),
-       cmap=color,linestyles='dashed')
-       cset = ax.contour(xx, yy, zz, xxlevels, zdir='x',offset=xx.min(),
-       cmap=color,linestyles='dashed')
-       cset = ax.contour(xx, yy, zz, yylevels, zdir='y',offset=yy.max(),
-       cmap=color,linestyles='dashed')
-       for c in cset.collections:
-           c.set_dashes([(0, (2.0, 2.0))]) # Dash contours
-       plt.clabel(cset,fontsize=8, inline=1)
-       ax.set_xlim(xx.min(),xx.max())
-       ax.set_ylim(yy.min(),yy.max())
-       ax.set_zlim(zz.min(),zz.max())
+    surf = ax.plot_surface(xx, yy, zz,rstride=1, cstride=1,
+                          alpha=0.65,cmap=color,vmin=zz.min(), vmax=zz.max())
+    ax.set_xlabel('S')
+    ax.set_ylabel('T')
+    ax.set_zlabel(output)
+    # Plot 3D contour
+    zzlevels = np.linspace(zz.min(),zz.max(),num=3,endpoint=True)
+    xxlevels = np.linspace(xx.min(),xx.max(),num=3,endpoint=True)
+    yylevels = np.linspace(yy.min(),yy.max(),num=3,endpoint=True)
+    cset = ax.contour(xx, yy, zz, zzlevels, zdir='z',offset=zz.min(),
+    cmap=color,linestyles='dashed')
+    cset = ax.contour(xx, yy, zz, xxlevels, zdir='x',offset=xx.min(),
+    cmap=color,linestyles='dashed')
+    cset = ax.contour(xx, yy, zz, yylevels, zdir='y',offset=yy.max(),
+    cmap=color,linestyles='dashed')
+    for c in cset.collections:
+       c.set_dashes([(0, (2.0, 2.0))]) # Dash contours
+    plt.clabel(cset,fontsize=8, inline=1)
+    ax.set_xlim(xx.min(),xx.max())
+    ax.set_ylim(yy.min(),yy.max())
+    ax.set_zlim(zz.min(),zz.max())
 
-       for tick in ax.xaxis.get_major_ticks():
-                       tick.label.set_fontsize(6) 
-       for tick in ax.yaxis.get_major_ticks():
-                       tick.label.set_fontsize(6) 
-       for tick in ax.zaxis.get_major_ticks():
-                       tick.label.set_fontsize(6) 
+    for tick in ax.xaxis.get_major_ticks():
+                   tick.label.set_fontsize(6) 
+    for tick in ax.yaxis.get_major_ticks():
+                   tick.label.set_fontsize(6) 
+    for tick in ax.zaxis.get_major_ticks():
+                   tick.label.set_fontsize(6) 
 
-       plt.xticks(np.arange(xx.min(), xx.max(), ((xx.max() - xx.min()) / 3)))
-       plt.yticks(np.arange(yy.min(), yy.max(), ((yy.max() - yy.min()) / 3)))
+    plt.xticks(np.arange(xx.min(), xx.max(), ((xx.max() - xx.min()) / 3)))
+    plt.yticks(np.arange(yy.min(), yy.max(), ((yy.max() - yy.min()) / 3)))
 
-       #Colorbar
-       colbar = plt.colorbar(surf, shrink=1.0, extend='both', aspect = 10)
-       l,b,w,h = plt.gca().get_position().bounds
-       ll,bb,ww,hh = colbar.ax.get_position().bounds
-       colbar.ax.set_position([ll, b+0.1*h, ww, h*0.8])
-       tick_locator = ticker.MaxNLocator(nbins=4)
-       colbar.locator = tick_locator
-       colbar.update_ticks()
+    #Colorbar
+    colbar = plt.colorbar(surf, shrink=1.0, extend='both', aspect = 10)
+    l,b,w,h = plt.gca().get_position().bounds
+    ll,bb,ww,hh = colbar.ax.get_position().bounds
+    colbar.ax.set_position([ll, b+0.1*h, ww, h*0.8])
+    tick_locator = ticker.MaxNLocator(nbins=4)
+    colbar.locator = tick_locator
+    colbar.update_ticks()
 
 
 sk = surfaceData.index
@@ -308,19 +309,19 @@ plt.show()
 sabrParams.plot(x=sabrParams.t,y=['a','v','p'])
 plt.show()
 
-import numpy as np
+degree = math.floor(len(sabrParams)/3)
 
 x = sabrParams.t.tolist()
 y_a = ((sabrParams.a)**(-2)).tolist()
-z = np.polyfit(x, y_a, 6)
+z = np.polyfit(x, y_a, degree)
 a_p = np.poly1d(z)
 
 y_p = ((sabrParams.p)**(-1)).tolist()
-z = np.polyfit(x, y_p, 6)
+z = np.polyfit(x, y_p, degree)
 p_p = np.poly1d(z)
 
 y_v = ((sabrParams.v)**(-2)).tolist()
-z = np.polyfit(x, y_v, 6)
+z = np.polyfit(x, y_v, degree)
 v_p = np.poly1d(z)
 
 
@@ -364,7 +365,7 @@ fittedSurface = pd.DataFrame(0.0, index=xi, columns=yi)
 for index, row in fittedSurface.iterrows():
     for col in fittedSurface.columns:
         row[col] = __fitted_iv(underlying_price, index, col)
-      
+
 
 fig = plt.figure()
 
@@ -422,8 +423,6 @@ def local_voltility(ivS):
 lvs = local_voltility(fittedSurface)
 
 
-# In[81]:
-
 sk = lvs.index
 
 X = lvs.index.tolist()
@@ -448,4 +447,3 @@ __ShowChart(X, Y, Z, "Local Volatility", 1, color, fig)
 
 plt.title(str(quote) + ' Local Volatility Surface') 
 plt.show()
-
